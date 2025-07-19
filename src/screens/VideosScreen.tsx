@@ -1,6 +1,6 @@
 // src/screens/VideosScreen.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,13 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
-  SafeAreaView,
+  SafeAreaView, // We use this for the content area
   ListRenderItem,
+  TextInput,
+  Keyboard,
+  TouchableWithoutFeedback,
+  Platform,
+  StatusBar,
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Header from '../components/Header';
@@ -22,8 +27,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const HORIZONTAL_PADDING = 15;
 const CARD_GAP = 15;
 
-// --- ⚙️ ՆՈՐ, ՊԱՐԶ ԵՎ ՃԻՇՏ ՖՈՒՆԿՑԻԱ ---
-// Ստանում է ցանկացած YouTube հղում և վերադարձնում է embed տարբերակը
+// ✅ Extract YouTube video ID from iframe/source
 const getYouTubeVideoId = (source: string | undefined): string | null => {
   if (!source) return null;
 
@@ -33,13 +37,32 @@ const getYouTubeVideoId = (source: string | undefined): string | null => {
   return idMatch ? idMatch[1] : null;
 };
 
+// ✅ Return autoplay-enabled embed HTML
+const getVideoEmbedHtml = (videoId: string): string => {
+  const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&controls=1&modestbranding=1&rel=0`;
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <style>
+        html, body { margin: 0; padding: 0; background-color: black; height: 100%; overflow: hidden; }
+        iframe { width: 100%; height: 100%; border: 0; }
+      </style>
+    </head>
+    <body>
+      <iframe
+        src="${embedUrl}"
+        frameborder="0"
+        allow="autoplay; encrypted-media; fullscreen"
+        allowfullscreen
+      ></iframe>
+    </body>
+    </html>
+  `;
+};
 
-
-
-
-
-// --- ✅ Թարմացված Video Player կոմպոնենտ ---
-// Այժմ սպասում է `uri`, ոչ թե `html`
+// --- ✅ Updated Video Player Component ---
 const VideoPlayer = ({ videoId }: { videoId: string }) => {
   return (
     <View style={styles.webViewPlayer}>
@@ -49,50 +72,17 @@ const VideoPlayer = ({ videoId }: { videoId: string }) => {
         allowsInlineMediaPlayback
         mediaPlaybackRequiresUserAction={false}
         scrollEnabled={false}
-        source={{
-          html: `
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <style>
-                html, body {
-                  margin: 0;
-                  padding: 0;
-                  background-color: black;
-                }
-                iframe {
-                  position: absolute;
-                  top: 0;
-                  left: 0;
-                  width: 100%;
-                  height: 100%;
-                  border: 0;
-                }
-              </style>
-            </head>
-            <body>
-              <iframe
-                src="https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&controls=1"
-                allow="autoplay; encrypted-media"
-                allowfullscreen
-              ></iframe>
-            </body>
-          </html>
-          `,
-        }}
+        source={{ html: getVideoEmbedHtml(videoId) }}
       />
     </View>
   );
 };
 
-
-
-
-
 const VideosScreen = ({ navigation }: any) => {
     const [data, setData] = useState<FetchVideosResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+    const [searchText, setSearchText] = useState('');
 
     useEffect(() => {
         const loadVideos = async () => {
@@ -121,7 +111,25 @@ const VideosScreen = ({ navigation }: any) => {
         });
     };
 
-    // --- ✅ Թարմացված Regular Video Card ---
+    const filteredData = useMemo(() => {
+        if (!data) return { videos: [], shorts: [] };
+        const lowerCaseSearchText = searchText.toLowerCase();
+
+        const filterItems = (items: VideoItem[]) => {
+            if (!lowerCaseSearchText) return items;
+            return items.filter(item =>
+                item.title.toLowerCase().includes(lowerCaseSearchText) ||
+                (item.subtitle && item.subtitle.toLowerCase().includes(lowerCaseSearchText)) ||
+                (item.author && item.author.toLowerCase().includes(lowerCaseSearchText))
+            );
+        };
+
+        return {
+            videos: filterItems(data.videos || []),
+            shorts: filterItems(data.shorts || []),
+        };
+    }, [data, searchText]);
+
     const renderVideoCard: ListRenderItem<VideoItem> = ({ item }) => {
       const isPlaying = playingVideoId === item.id;
       const videoId = isPlaying ? getYouTubeVideoId(item.iframe) : null;
@@ -167,13 +175,10 @@ const VideosScreen = ({ navigation }: any) => {
       );
     };
     
-    
-
-    // --- Component to render Short Card ---
     const renderShortCard: ListRenderItem<VideoItem> = ({ item }) => (
         <TouchableOpacity
             style={styles.shortCard}
-            onPress={() => item.iframe && data?.shorts && handleShortPress(item.id, data.shorts)}
+            onPress={() => item.iframe && filteredData.shorts && handleShortPress(item.id, filteredData.shorts)}
             activeOpacity={0.9}
         >
             <Image source={{ uri: item.thumbnailUrl }} style={styles.imageThumbnail} />
@@ -182,14 +187,13 @@ const VideosScreen = ({ navigation }: any) => {
         </TouchableOpacity>
     );
 
-    // --- Component to render Shorts Section ---
     const renderShortsSection = () => {
-        if (!data?.shorts || data.shorts.length === 0) return null;
+        if (!filteredData.shorts || filteredData.shorts.length === 0) return null;
         return (
             <View style={styles.sectionContainer}>
                 <Text style={styles.sectionHeader}>SHORTS</Text>
                 <FlatList
-                    data={data.shorts}
+                    data={filteredData.shorts}
                     keyExtractor={(item) => item.id}
                     renderItem={renderShortCard}
                     horizontal={true}
@@ -200,7 +204,6 @@ const VideosScreen = ({ navigation }: any) => {
         );
     };
 
-    // --- Main renderItem for the combined FlatList ---
     const renderCombinedItem: ListRenderItem<VideoItem | { type: 'shorts_section' }> = ({ item }) => {
         if ((item as any).type === 'shorts_section') {
             return renderShortsSection();
@@ -218,11 +221,11 @@ const VideosScreen = ({ navigation }: any) => {
     }
 
     const allItems: (VideoItem | { type: 'shorts_section', id: string })[] = [];
-    const regularVideos = data?.videos || [];
+    const regularVideos = filteredData.videos || [];
     const initialVideos = regularVideos.slice(0, 3);
     initialVideos.forEach(video => allItems.push({ ...video, type: 'regular' }));
 
-    if (data?.shorts && data.shorts.length > 0) {
+    if (filteredData.shorts && filteredData.shorts.length > 0) {
         allItems.push({ type: 'shorts_section', id: 'shorts_section_unique_id' });
     }
 
@@ -230,42 +233,79 @@ const VideosScreen = ({ navigation }: any) => {
     remainingVideos.forEach(video => allItems.push({ ...video, type: 'regular' }));
 
     return (
-        <SafeAreaView style={styles.container}>
+        // The main container is now a View to allow the Header to sit at the very top.
+        <View style={styles.container}>
             <Header />
-            <FlatList
-                data={allItems}
-                keyExtractor={(item, index) => item.id || `item-${index}`}
-                renderItem={renderCombinedItem}
-                extraData={playingVideoId}
-                ItemSeparatorComponent={() => <View style={{ height: CARD_GAP }} />}
-                ListHeaderComponent={
-                    <Text style={styles.pageTitle}>ՏԵՍԱԴԱՐԱՆ</Text>
-                }
-                ListFooterComponent={
-                    <View style={{ height: 100 }}>
-                        {(!data?.videos || data.videos.length === 0) && (!data?.shorts || data.shorts.length === 0) && (
-                            <Text style={styles.noVideosText}>Առայժմ տեսանյութեր չկան։</Text>
-                        )}
+            {/* The content is wrapped in a SafeAreaView to protect it from notches and the home indicator. */}
+            <SafeAreaView style={styles.safeContentContainer}>
+                <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                    <View style={styles.contentArea}>
+                        {/* Search Input */}
+                        <View style={styles.searchContainer}>
+                            <TextInput
+                                style={styles.searchInput}
+                                placeholder="Որոնել տեսանյութեր կամ շորթեր..."
+                                placeholderTextColor="#999"
+                                value={searchText}
+                                onChangeText={setSearchText}
+                                clearButtonMode="while-editing"
+                                autoCapitalize="none"
+                            />
+                        </View>
+                        {/* FlatList for videos and shorts */}
+                        <FlatList
+                            data={allItems}
+                            keyExtractor={(item, index) => item.id || `item-${index}`}
+                            renderItem={renderCombinedItem}
+                            extraData={playingVideoId}
+                            ItemSeparatorComponent={() => <View style={{ height: CARD_GAP }} />}
+                            ListHeaderComponent={
+                                <Text style={styles.pageTitle}>ՏԵՍԱԴԱՐԱՆ</Text>
+                            }
+                            ListFooterComponent={
+                                <View style={{ height: 40 }}>
+                                    {(!filteredData.videos || filteredData.videos.length === 0) && (!filteredData.shorts || filteredData.shorts.length === 0) && (
+                                        <Text style={styles.noVideosText}>Առայժմ տեսանյութեր չկան։</Text>
+                                    )}
+                                </View>
+                            }
+                            contentContainerStyle={{ paddingBottom: 20 }}
+                            keyboardShouldPersistTaps="handled"
+                        />
                     </View>
-                }
-                contentContainerStyle={{ paddingBottom: 20 }}
-            />
-            <View style={styles.footerAbsolute}>
+                </TouchableWithoutFeedback>
                 <FooterNav />
-            </View>
-        </SafeAreaView>
+            </SafeAreaView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f4f4f4' },
+    container: {
+        flex: 1,
+        // The background color should match the Header's color to fill the status bar area.
+        backgroundColor: '#802382',
+    },
+    safeContentContainer: {
+        flex: 1,
+        // This container for the list and footer has the page's main background color.
+        backgroundColor: '#f4f4f4',
+    },
     loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    footerAbsolute: { position: 'absolute', bottom: 0, left: 0, right: 0 },
-    pageTitle: { fontSize: 22, fontWeight: 'bold', color: '#802382', textAlign: 'left', marginVertical: 20 , marginRight:30},
+    contentArea: {
+        flex: 1,
+    },
+    pageTitle: {
+      fontSize: 22,
+      fontWeight: 'bold',
+      color: '#802382',
+      textAlign: 'left',
+      marginVertical: 20,
+      paddingLeft: HORIZONTAL_PADDING,
+    },
     sectionContainer: { marginBottom: 25 },
-    sectionHeader: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 15, paddingHorizontal: HORIZONTAL_PADDING },
+    sectionHeader: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 15 },
     noVideosText: { textAlign: 'center', marginTop: 50, fontSize: 16, color: '#666' },
-
     cardWrapper: { paddingHorizontal: HORIZONTAL_PADDING },
     videoCard: {
         backgroundColor: '#fff',
@@ -311,7 +351,6 @@ const styles = StyleSheet.create({
     videoContent: { padding: 12 },
     videoTitle: { fontSize: 16, fontWeight: 'bold', color: '#333' },
     videoSubtitle: { fontSize: 13, color: '#666', marginTop: 4 },
-
     shortsListContent: { paddingHorizontal: HORIZONTAL_PADDING },
     shortCard: {
         width: SCREEN_WIDTH * 0.35,
@@ -335,6 +374,26 @@ const styles = StyleSheet.create({
         textShadowColor: 'rgba(0, 0, 0, 0.8)',
         textShadowOffset: { width: 1, height: 1 },
         textShadowRadius: 3,
+    },
+    searchContainer: {
+        paddingHorizontal: HORIZONTAL_PADDING,
+        paddingTop: 10,
+        paddingBottom: 5,
+        backgroundColor: '#f4f4f4', // Ensures search bar background is correct
+    },
+    searchInput: {
+        height: 45,
+        borderColor: '#ccc',
+        borderWidth: 1,
+        borderRadius: 25,
+        paddingHorizontal: 15,
+        fontSize: 16,
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 3,
     },
 });
 

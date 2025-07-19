@@ -22,7 +22,7 @@ const PRIMARY_COLOR = '#833F6D';
 const primaryBackgroundHeight =
   IMAGE_CONTAINER_VERTICAL_OFFSET +
   (SCREEN_WIDTH * IMAGE_CONTAINER_HEIGHT_RATIO) -
-  150;
+  160;
 
 const bannerImages = [
   // ... (Ձեր bannerImages զանգվածը նույնն է)
@@ -52,8 +52,8 @@ const DoctorsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.primaryBackground, { height: primaryBackgroundHeight }]}></View>
-      <Header />
+      <View style={[styles.primaryBackground, { height: primaryBackgroundHeight, marginTop:10, }]}></View>
+      <Header/>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.listContainer}>
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15, // Այս լուսանցքը թողնում ենք բովանդակության համար
     paddingVertical: 20,
     paddingBottom: 100,
-    paddingTop: 20, // Կարգավորեք սա ձեր դիզայնի համար
+    paddingTop: 25, // Կարգավորեք սա ձեր դիզայնի համար
   },
   listContainer: {
     // Կենտրոնացնում ենք քարտերը listContainer-ի մեջ
@@ -111,6 +111,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 50,
     borderBottomRightRadius: 50,
     position: 'absolute',
+    marginTop:10,
     top: 0,
     left: 0,
     right: 0,

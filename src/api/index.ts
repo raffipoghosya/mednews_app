@@ -14,6 +14,10 @@ export interface Article {
 }
 
 export interface VideoItem {
+  comments: number;
+  likes: number;
+  musicTitle: string;
+  author: string;
   id: string;
   title: string;
   description?: string;
@@ -234,6 +238,10 @@ export const fetchVideosData = async (): Promise<FetchVideosResponse> => {
         videoUrl: getVideoSource(item), // Սա կօգտագործի 'iframe' դաշտը
         type: item.type || 'regular',
         subtitle: item.subtitle || '',
+        comments: item.comments || 0,
+        likes: item.likes || 0,
+        musicTitle: item.musicTitle || '',
+        author: item.author || '',
       }));
     };
 

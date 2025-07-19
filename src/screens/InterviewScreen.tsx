@@ -12,12 +12,13 @@ import {
 } from 'react-native';
 import Header from '../components/Header';
 import FooterNav from '../components/FooterNav';
-// ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ 1. Ներմուծում ենք fetchIndexData ֆունկցիան
 import { fetchArticlesByCategory, Article, fetchLatestArticles, fetchIndexData } from '../api/index';
 
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { LinearGradient } from 'expo-linear-gradient';
+// ✅ Ավելացրել ենք BlurView-ի ներմուծումը
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient'; // Սա դեռ պահպանում ենք, եթե այլ տեղ օգտագործվում է
 
 // ────────────────────────────────────────────────
 // Navigation types
@@ -39,11 +40,18 @@ type InterviewScreenNavigationProp = StackNavigationProp<RootStackParamList, 'In
 // ────────────────────────────────────────────────
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_GAP = 16;
+const CARD_GAP = 16; // Քարտերի միջև բացը և cardsWrapper-ի ներքին padding-ը
+const SIDE_PADDING = 16; // cardsWrapper-ի արտաքին marginHorizontal-ի համար
 const PRIMARY_COLOR = '#833F6D';
 const LATEST_ARTICLE_BG = '#C5B2BF'; // Վերին հատվածի ֆոնի գույնը
-const SIDE_PADDING = 16;
-const CARD_W = (SCREEN_WIDTH - SIDE_PADDING * 2 - CARD_GAP) / 2;
+
+// ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ: Ավելի ճշգրիտ CARD_W հաշվարկ՝ համապատասխան HomeScreen-ին
+// cardsWrapper-ի ներքին padding-ը մեր դեպքում նույն CARD_GAP-ն է
+const CARDS_WRAPPER_INTERNAL_PADDING = CARD_GAP;
+
+// (Ընդհանուր լայնություն - 2 * cardsWrapper-ի արտաքին margin - 2 * cardsWrapper-ի ներքին padding - քարտերի միջև եղած gap) / 2
+const CARD_W = (SCREEN_WIDTH - (SIDE_PADDING * 2) - (CARDS_WRAPPER_INTERNAL_PADDING * 2) - CARD_GAP) / 2;
+
 const CARD_H = 151;
 
 // ────────────────────────────────────────────────
@@ -80,17 +88,13 @@ const InterviewScreen = () => {
   const fetchInitialData = useCallback(async () => {
     setLoadingInitial(true);
     try {
-      // ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ 2. Տվյալները ստանում ենք զուգահեռ՝ NewsScreen-ի նման
       const [indexData, latestInterviews, interviewPageData] = await Promise.all([
-        fetchIndexData(),                        // Սլայդի համար (ընդհանուր)
-        fetchLatestArticles('interview', 3),     // Վերջին 3 հարցազրույցները
-        fetchArticlesByCategory('interview', 1, 13) // Մնացած 13 հարցազրույցները
+        fetchIndexData(),
+        fetchLatestArticles('interview', 3),
+        fetchArticlesByCategory('interview', 1, 13)
       ]);
 
-      // ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ 3. Սլայդի համար օգտագործում ենք ընդհանուր տվյալները
       setSlideArticles(indexData.slidePosts.slice(0, 6));
-
-      // Մնացած տվյալները դնում ենք իրենց տեղերը
       setLatestArticles(latestInterviews);
       setMiddleArticles(interviewPageData.articles.slice(0, 3));
       setAllArticles(interviewPageData.articles.slice(3));
@@ -113,14 +117,15 @@ const InterviewScreen = () => {
       const nextPageData = await fetchArticlesByCategory('interview', page, 10);
       setAllArticles(prev => [...prev, ...nextPageData.articles]);
       setPage(prev => prev + 1);
-      // ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ 4. Հաշվարկի ճշգրտում
-      setHasMore(allArticles.length + nextPageData.articles.length + 6 < nextPageData.totalCount);
+      setHasMore(
+        latestArticles.length + slideArticles.length + allArticles.length + nextPageData.articles.length < nextPageData.totalCount
+      );
     } catch (err) {
       console.error('Failed to fetch more interview articles:', err);
     } finally {
       setLoadingMore(false);
     }
-  }, [hasMore, loadingMore, page, allArticles.length]);
+  }, [hasMore, loadingMore, page, allArticles.length, latestArticles.length, slideArticles.length]);
 
   useEffect(() => {
     fetchInitialData();
@@ -133,8 +138,14 @@ const InterviewScreen = () => {
   const renderPostCard = useCallback(({ item }: { item: Article }) => (
     <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ArticleScreen', { id: item.id })}>
       <Image source={{ uri: item.image_url }} style={styles.cardImg} />
-      <LinearGradient colors={['rgba(0,0,0,0.35)', 'transparent']} style={styles.cardGradient} />
-      <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
+      {/* ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ: Կիրառում ենք BlurView LinearGradient-ի փոխարեն */}
+      <BlurView
+        intensity={70}
+        tint="dark"
+        style={styles.cardBlurOverlay} // Կօգտագործենք HomeScreen-ի նման ոճ
+      >
+        <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
+      </BlurView>
     </TouchableOpacity>
   ), [navigation]);
 
@@ -219,7 +230,6 @@ const InterviewScreen = () => {
         {middleArticles.length > 0 && (
           <View style={styles.sectionContainerWithTitle}>
             <Text style={styles.sectionTitle}>ԱՅԼ ՀԱՐՑԱԶՐՈՒՅՑՆԵՐ</Text>
-            {/* ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ 5. Կիրառում ենք միասնական ոճը */}
             <View style={styles.latestBoxWrapper}>
               <FlatList
                 data={middleArticles}
@@ -238,7 +248,6 @@ const InterviewScreen = () => {
         {/* ───── ALL ARTICLES SECTION ───── */}
         {allArticles.length > 0 && (
           <View style={styles.sectionContainer}>
-             {/* ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ 6. Կիրառում ենք միասնական ոճը */}
             <View style={styles.latestBoxWrapper}>
               <FlatList
                 data={allArticles}
@@ -272,7 +281,6 @@ const styles = StyleSheet.create({
   loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   body: { paddingBottom: 24, backgroundColor: '#fff' },
 
-  // ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ 7. Թարմացված ոճ՝ գունավոր ֆոնով
   topSectionContainer: {
     backgroundColor: LATEST_ARTICLE_BG, 
     paddingTop: 10,
@@ -285,15 +293,15 @@ const styles = StyleSheet.create({
   pageTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: PRIMARY_COLOR,
+    color: '#FFFFFF',
     textAlign: 'left',
     marginVertical: 20,
-    paddingHorizontal: CARD_GAP,
+    paddingHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
   },
 
   latestArticlesSection: {
     backgroundColor: LATEST_ARTICLE_BG,
-    paddingHorizontal: CARD_GAP,
+    paddingHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
     marginBottom: CARD_GAP,
   },
 
@@ -322,6 +330,7 @@ const styles = StyleSheet.create({
     minWidth: 0,
     justifyContent: 'space-between',
     paddingVertical: 4,
+    paddingLeft: 10,
   },
 
   latestArticleTitle: {
@@ -345,10 +354,10 @@ const styles = StyleSheet.create({
   },
 
   cardsWrapper: {
-    marginHorizontal: CARD_GAP,
+    marginHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
     backgroundColor: '#fff',
     borderRadius: 18,
-    padding: CARD_GAP,
+    padding: CARD_GAP, // ✅ Օգտագործում ենք CARD_GAP
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
@@ -356,7 +365,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    width: CARD_W,
+    width: CARD_W, // ✅ Նոր հաշվարկված CARD_W
     height: CARD_H,
     borderRadius: 12,
     overflow: 'hidden',
@@ -365,15 +374,24 @@ const styles = StyleSheet.create({
     width: '100%', 
     height: '100%',
   },
-  cardGradient: { 
-    position: 'absolute', 
-    bottom: 0, 
-    left: 0, 
-    right: 0, 
-    height: '30%' 
+  // ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ: BlurView-ի ոճը HomeScreen-ի նման
+  cardBlurOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '40%', // Կարող եք կարգավորել ըստ ցանկության
+    justifyContent: 'flex-end',
+    paddingHorizontal: 10,
+    paddingBottom: 12,
+    overflow: 'hidden',
   },
   cardTitle: { 
-    position: 'absolute', 
+    position: 'absolute', // Դիրքը մնում է նույնը, բայց այն BlurView-ի ներսում է
+    // bottom, left, right արժեքները կախված կլինեն cardBlurOverlay-ի padding-ից,
+    // եթե դուք դրանք ուզում եք ճշգրտել ըստ բլուրի ներքին տարածքի։
+    // Այս դեպքում, քանի որ cardBlurOverlay-ը ունի padding, կարելի է դրանք թողնել,
+    // քանի որ cardTitle-ը կգտնվի այդ padding-ի ներսում։
     bottom: 12, 
     left: 10, 
     right: 10, 
@@ -385,7 +403,7 @@ const styles = StyleSheet.create({
   middleBanner: {
     height: 150,
     borderRadius: 14,
-    marginHorizontal: CARD_GAP,
+    marginHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
     marginVertical: CARD_GAP + 8,
   },
 
@@ -398,7 +416,7 @@ const styles = StyleSheet.create({
 
   sectionContainer: {
     marginTop: CARD_GAP,
-    paddingHorizontal: CARD_GAP,
+    paddingHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
   },
 
   sectionContainerWithTitle: {
@@ -410,16 +428,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: PRIMARY_COLOR,
     marginBottom: 12,
-    paddingHorizontal: CARD_GAP,
+    paddingHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
   },
 
-  // ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ 8. Նոր ոճ՝ էկրանի հիմնական (սպիտակ) մասի բլոկների համար
   latestBoxWrapper: {
     backgroundColor: '#fff',
     borderRadius: 18,
     padding: CARD_GAP,
     borderWidth: 1,
-    borderColor: '#f0f0f0'
+    borderColor: '#f0f0f0',
+    marginHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
   },
 });
 
