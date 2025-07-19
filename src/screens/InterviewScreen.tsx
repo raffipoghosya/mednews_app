@@ -274,11 +274,12 @@ const styles = StyleSheet.create({
 
   // ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ 7. Թարմացված ոճ՝ գունավոր ֆոնով
   topSectionContainer: {
-    backgroundColor: LATEST_ARTICLE_BG,
-    paddingTop: 18,
+    backgroundColor: LATEST_ARTICLE_BG, 
+    paddingTop: 10,
     paddingBottom: 22,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
+    marginTop:14,
   },
 
   pageTitle: {

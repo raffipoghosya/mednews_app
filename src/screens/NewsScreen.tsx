@@ -22,7 +22,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 // ────────────────────────────────────────────────
 // Navigation types
 // ────────────────────────────────────────────────
-
 type RootStackParamList = {
   Home: undefined;
   NewsScreen: undefined;
@@ -272,10 +271,11 @@ const styles = StyleSheet.create({
 
   topSectionContainer: {
     backgroundColor: LATEST_ARTICLE_BG, 
-    paddingTop: 18,
+    paddingTop: 10,
     paddingBottom: 22,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
+    marginTop:14,
   },
 
   pageTitle: {
