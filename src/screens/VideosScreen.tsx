@@ -24,64 +24,67 @@ const CARD_GAP = 15;
 
 // --- ⚙️ ՆՈՐ, ՊԱՐԶ ԵՎ ՃԻՇՏ ՖՈՒՆԿՑԻԱ ---
 // Ստանում է ցանկացած YouTube հղում և վերադարձնում է embed տարբերակը
-const getYouTubeEmbedUrl = (source: string | undefined): string | null => {
+const getYouTubeVideoId = (source: string | undefined): string | null => {
   if (!source) return null;
 
-  const idMatch = source.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|embed\/|v\/|watch\?v=|shorts\/)|youtu\.be\/)([\w-]{11})/);
-  const videoId = idMatch ? idMatch[1] : null;
-
-  if (videoId) {
-    // 🚨 ՀԵՌԱՑՐԱԾ autoplay=1 պարամետրը
-    return `https://www.youtube.com/embed/${videoId}?playsinline=1&controls=1`;
-  }
-
-  console.warn(`Չհաջողվեց գտնել YouTube ID այս հղման մեջ: ${source}`);
-  return null;
+  const idMatch = source.match(
+    /(?:youtube\.com\/(?:[^\/]+\/.+\/|embed\/|v\/|watch\?v=|shorts\/)|youtu\.be\/)([\w-]{11})/,
+  );
+  return idMatch ? idMatch[1] : null;
 };
+
+
 
 
 
 
 // --- ✅ Թարմացված Video Player կոմպոնենտ ---
 // Այժմ սպասում է `uri`, ոչ թե `html`
-const VideoPlayer = ({ embedUrl }: { embedUrl: string }) => (
-  <View style={styles.webViewPlayer}>
-    <WebView
-      originWhitelist={['*']}
-      source={{
-        html: `
+const VideoPlayer = ({ videoId }: { videoId: string }) => {
+  return (
+    <View style={styles.webViewPlayer}>
+      <WebView
+        originWhitelist={['*']}
+        javaScriptEnabled
+        allowsInlineMediaPlayback
+        mediaPlaybackRequiresUserAction={false}
+        scrollEnabled={false}
+        source={{
+          html: `
           <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0">
-            <style>
-              body,html {
-                margin: 0;
-                padding: 0;
-                background-color: black;
-                overflow: hidden;
-                height: 100%;
-              }
-              iframe {
-                border: none;
-                width: 100%;
-                height: 100%;
-              }
-            </style>
-          </head>
-          <body>
-            <iframe src="${embedUrl}" allowfullscreen allow="encrypted-media"></iframe>
-          </body>
+          <html>
+            <head>
+              <style>
+                html, body {
+                  margin: 0;
+                  padding: 0;
+                  background-color: black;
+                }
+                iframe {
+                  position: absolute;
+                  top: 0;
+                  left: 0;
+                  width: 100%;
+                  height: 100%;
+                  border: 0;
+                }
+              </style>
+            </head>
+            <body>
+              <iframe
+                src="https://www.youtube.com/embed/${videoId}?autoplay=1&playsinline=1&controls=1"
+                allow="autoplay; encrypted-media"
+                allowfullscreen
+              ></iframe>
+            </body>
           </html>
-        `,
-      }}
-      javaScriptEnabled={true}
-      domStorageEnabled={true}
-      allowsInlineMediaPlayback={true}
-      mediaPlaybackRequiresUserAction={true}
-    />
-  </View>
-);
+          `,
+        }}
+      />
+    </View>
+  );
+};
+
 
 
 
@@ -121,28 +124,29 @@ const VideosScreen = ({ navigation }: any) => {
     // --- ✅ Թարմացված Regular Video Card ---
     const renderVideoCard: ListRenderItem<VideoItem> = ({ item }) => {
       const isPlaying = playingVideoId === item.id;
-      const videoEmbedUrl = isPlaying ? getYouTubeEmbedUrl(item.iframe) : null;
+      const videoId = isPlaying ? getYouTubeVideoId(item.iframe) : null;
     
       return (
         <View style={styles.cardWrapper}>
-          {isPlaying && videoEmbedUrl ? (
-            // 🔥 Եթե արդեն նվագարկվում է, ապա Touchable չլինի
+          {isPlaying && videoId ? (
             <View style={styles.videoCard}>
               <View style={styles.videoThumbnail}>
-                <VideoPlayer embedUrl={videoEmbedUrl} />
+                <VideoPlayer videoId={videoId} />
               </View>
               <View style={styles.videoContent}>
                 <Text style={styles.videoTitle} numberOfLines={2}>{item.title}</Text>
-                {item.subtitle && <Text style={styles.videoSubtitle} numberOfLines={1}>{item.subtitle}</Text>}
+                {item.subtitle && (
+                  <Text style={styles.videoSubtitle} numberOfLines={1}>
+                    {item.subtitle}
+                  </Text>
+                )}
               </View>
             </View>
           ) : (
-            // 🔥 Սկզբում թող Touchable լինի
             <TouchableOpacity
               style={styles.videoCard}
               onPress={() => item.iframe && handlePlayVideo(item.id)}
-              activeOpacity={0.9}
-            >
+              activeOpacity={0.9}>
               <View style={styles.videoThumbnail}>
                 <Image source={{ uri: item.thumbnailUrl }} style={styles.imageThumbnail} />
                 <View style={styles.playIconOverlay}>
@@ -151,13 +155,18 @@ const VideosScreen = ({ navigation }: any) => {
               </View>
               <View style={styles.videoContent}>
                 <Text style={styles.videoTitle} numberOfLines={2}>{item.title}</Text>
-                {item.subtitle && <Text style={styles.videoSubtitle} numberOfLines={1}>{item.subtitle}</Text>}
+                {item.subtitle && (
+                  <Text style={styles.videoSubtitle} numberOfLines={1}>
+                    {item.subtitle}
+                  </Text>
+                )}
               </View>
             </TouchableOpacity>
           )}
         </View>
       );
     };
+    
     
 
     // --- Component to render Short Card ---
@@ -230,7 +239,7 @@ const VideosScreen = ({ navigation }: any) => {
                 extraData={playingVideoId}
                 ItemSeparatorComponent={() => <View style={{ height: CARD_GAP }} />}
                 ListHeaderComponent={
-                    <Text style={styles.pageTitle}>ՏԵՍԱՆՅՈՒԹԵՐ</Text>
+                    <Text style={styles.pageTitle}>ՏԵՍԱԴԱՐԱՆ</Text>
                 }
                 ListFooterComponent={
                     <View style={{ height: 100 }}>
@@ -252,7 +261,7 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f4f4f4' },
     loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     footerAbsolute: { position: 'absolute', bottom: 0, left: 0, right: 0 },
-    pageTitle: { fontSize: 22, fontWeight: 'bold', color: '#802382', textAlign: 'center', marginVertical: 20 },
+    pageTitle: { fontSize: 22, fontWeight: 'bold', color: '#802382', textAlign: 'left', marginVertical: 20 , marginRight:30},
     sectionContainer: { marginBottom: 25 },
     sectionHeader: { fontSize: 18, fontWeight: 'bold', color: '#333', marginBottom: 15, paddingHorizontal: HORIZONTAL_PADDING },
     noVideosText: { textAlign: 'center', marginTop: 50, fontSize: 16, color: '#666' },
