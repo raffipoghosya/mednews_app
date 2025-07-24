@@ -1,6 +1,6 @@
 // src/components/FooterNav.tsx
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
@@ -106,6 +106,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#833F6D',
     paddingVertical: 17,
     paddingHorizontal: 14,
+    marginBottom: Platform.OS === 'android' ? 20 : 5,
   },
   item: {
     alignItems: 'center',
