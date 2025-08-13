@@ -13,8 +13,8 @@ import {
     TouchableOpacity,
     Linking,
 } from 'react-native';
-import Header from '../components/Header';
-import FooterNav from '../components/FooterNav';
+// import Header from '../components/Header';
+// import FooterNav from '../components/FooterNav';
 import { fetchArticleData } from '../api';
 import HTMLView from 'react-native-htmlview';
 
@@ -132,7 +132,7 @@ const ArticleScreen = ({ route }: any) => {
 
     return (
         <View style={styles.container}>
-            <Header />
+            {/* <Header /> */}
             <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
                 {/* 1. Մուգ ֆոնային բլոկը Header-ից հետո */}
                 <View style={[styles.primaryBackgroundShape, { height: primaryBackgroundHeight }]}></View>
@@ -198,7 +198,7 @@ const ArticleScreen = ({ route }: any) => {
 
 
             </ScrollView>
-            <FooterNav />
+            {/* <FooterNav /> */}
         </View>
     );
 };

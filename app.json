@@ -25,11 +25,18 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "package": "com.raffi.mednewsapp",
+      "versionCode": 1,
       "edgeToEdgeEnabled": true,
       "hardwareAccelerated": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "74267b39-6ba0-4fdf-8d73-4947d89d5023"
+      }
     }
   }
 }

@@ -15,6 +15,7 @@ import { BlurView } from 'expo-blur';
 import Header from '../components/Header';
 import FooterNav from '../components/FooterNav';
 import { fetchIndexData } from '../api';
+import { useData } from '../context/DataContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_GAP = 14;
@@ -38,13 +39,8 @@ const stripHtmlTags = (htmlString: string) => {
 };
 
 const HomeScreen = ({ navigation }: any) => {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, loading } = useData();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-
-  useEffect(() => {
-    fetchIndexData().then(setData).catch(console.error).finally(() => setLoading(false));
-  }, []);
 
   // useEffect՝ սլայդերը ավտոմատ փոխելու համար
   useEffect(() => {
@@ -101,7 +97,7 @@ const HomeScreen = ({ navigation }: any) => {
 
   return (
     <View style={styles.container}>
-      <Header />
+      {/* <Header /> */}
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 90 }]}
@@ -176,7 +172,7 @@ const HomeScreen = ({ navigation }: any) => {
       </ScrollView>
 
       <View style={styles.footerAbsolute}>
-        <FooterNav />
+        {/* <FooterNav /> */}
       </View>
     </View>
   );

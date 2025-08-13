@@ -1,29 +1,16 @@
 // src/components/FooterNav.tsx
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
 
-// Համոզվեք, որ այս ուղիները ճիշտ են ձեր նախագծում
 import HomeIcon from '../../assets/icons/home.svg';
 import NewsIcon from '../../assets/icons/news.svg';
 import VideoIcon from '../../assets/icons/video.svg';
 import InterwIcon from '../../assets/icons/interw.svg';
 import DoctorIcon from '../../assets/icons/doctor.svg';
 
-// Սահմանում ենք StackParamList-ը
-type RootStackParamList = {
-  Home: undefined;
-  NewsScreen: undefined; // Նոր էջ
-  Videos: undefined;
-  InterviewScreen: undefined; // Նոր էջ
-  Doctors: undefined;
-  ArticleScreen: { id: string };
-};
-
-const FooterNav = () => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const route = useRoute();
+const FooterNav = (props: any) => {
+  const { state, navigation } = props;
+  const currentRouteName = state.routeNames[state.index];
 
   return (
     <View style={styles.footerContainer}>
@@ -31,37 +18,42 @@ const FooterNav = () => {
         <NavIcon
           Icon={HomeIcon}
           label="Գլխավոր"
-          routeName="Home"
-          currentRouteName={route.name}
-          onPress={() => navigation.navigate('Home')}
+          // ✅ Փոփոխված է՝ համապատասխանեցնելով AppNavigator-ին
+          routeName="HomeStack"
+          currentRouteName={currentRouteName}
+          onPress={() => navigation.navigate('HomeStack')}
         />
         <NavIcon
           Icon={NewsIcon}
           label="Լրահոս"
-          routeName="NewsScreen" // Ուղղորդում դեպի NewsScreen
-          currentRouteName={route.name}
-          onPress={() => navigation.navigate('NewsScreen')}
+          // ✅ Փոփոխված է
+          routeName="NewsStack"
+          currentRouteName={currentRouteName}
+          onPress={() => navigation.navigate('NewsStack')}
         />
         <NavIcon
           Icon={VideoIcon}
           label="Տեսանյութեր"
-          routeName="Videos"
-          currentRouteName={route.name}
-          onPress={() => navigation.navigate('Videos')} // Եթե ունեք Videos էջ
+          // ✅ Փոփոխված է
+          routeName="VideosStack"
+          currentRouteName={currentRouteName}
+          onPress={() => navigation.navigate('VideosStack')}
         />
         <NavIcon
           Icon={InterwIcon}
           label="Հարցազրույցներ"
-          routeName="InterviewScreen" // Ուղղորդում դեպի InterviewScreen
-          currentRouteName={route.name}
-          onPress={() => navigation.navigate('InterviewScreen')}
+          // ✅ Փոփոխված է
+          routeName="InterviewStack"
+          currentRouteName={currentRouteName}
+          onPress={() => navigation.navigate('InterviewStack')}
         />
         <NavIcon
           Icon={DoctorIcon}
           label="Բժիշկներ"
+          // ✅ Այս անունը ճիշտ էր՝ Doctors
           routeName="Doctors"
-          currentRouteName={route.name}
-          onPress={() => navigation.navigate('Doctors')} // Եթե ունեք Doctors էջ
+          currentRouteName={currentRouteName}
+          onPress={() => navigation.navigate('Doctors')}
         />
       </View>
     </View>
@@ -71,18 +63,18 @@ const FooterNav = () => {
 interface NavIconProps {
   Icon: React.FC<any>;
   label: string;
-  routeName: keyof RootStackParamList;
+  routeName: string;
   currentRouteName: string;
   onPress: () => void;
 }
 
 const NavIcon = ({ Icon, label, routeName, currentRouteName, onPress }: NavIconProps) => {
+  // Այժմ ընտրված լինելու ստուգումը ճիշտ կաշխատի
   const isSelected = currentRouteName === routeName;
 
   return (
     <TouchableOpacity style={styles.item} onPress={onPress}>
       <Icon width={67} height={42} opacity={isSelected ? 1 : 0.5} />
-      {/* <Text style={[styles.iconLabel, isSelected && styles.iconLabelSelected]}>{label}</Text> */}
     </TouchableOpacity>
   );
 };
@@ -95,10 +87,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 50,
     borderTopRightRadius: 50,
     overflow: 'hidden',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
   footer: {
     flexDirection: 'row',
@@ -106,19 +94,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#833F6D',
     paddingVertical: 17,
     paddingHorizontal: 14,
-    marginBottom: Platform.OS === 'android' ? 20 : 5,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
   },
   item: {
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 5,
-  },
-  iconLabel: {
-    fontSize: 10,
-    color: '#fff',
-    marginTop: 2,
-  },
-  iconLabelSelected: {
-    fontWeight: 'bold',
   },
 });

@@ -80,8 +80,8 @@ const SplashScreen = () => {
 
     /* 4) after 10 s → Home */
     const timeout = setTimeout(() => {
-      navigation.navigate('Home' as never);
-    }, 10000);
+      navigation.navigate('Main' as never);
+    }, 3000);
 
     return () => clearTimeout(timeout);
   }, []);

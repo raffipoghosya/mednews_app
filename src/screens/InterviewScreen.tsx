@@ -10,19 +10,16 @@ import {
   FlatList,
   TouchableOpacity,
 } from 'react-native';
-import Header from '../components/Header';
-import FooterNav from '../components/FooterNav';
-import { fetchArticlesByCategory, Article, fetchLatestArticles, fetchIndexData } from '../api/index';
-
+// ❌ ՀԵՌԱՑՎԱԾ ԵՆ Header-ի և FooterNav-ի import-ները
+import { fetchArticlesByCategory, Article, fetchLatestArticles } from '../api/index';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-// ✅ Ավելացրել ենք BlurView-ի ներմուծումը
 import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient'; // Սա դեռ պահպանում ենք, եթե այլ տեղ օգտագործվում է
+import { useData } from '../context/DataContext';
 
-// ────────────────────────────────────────────────
+// ----------------------------------------------------
 // Navigation types
-// ────────────────────────────────────────────────
+// ----------------------------------------------------
 
 type RootStackParamList = {
   Home: undefined;
@@ -35,28 +32,23 @@ type RootStackParamList = {
 
 type InterviewScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InterviewScreen'>;
 
-// ────────────────────────────────────────────────
+// ----------------------------------------------------
 // Constants
-// ────────────────────────────────────────────────
+// ----------------------------------------------------
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const CARD_GAP = 16; // Քարտերի միջև բացը և cardsWrapper-ի ներքին padding-ը
-const SIDE_PADDING = 16; // cardsWrapper-ի արտաքին marginHorizontal-ի համար
+const CARD_GAP = 16;
+const SIDE_PADDING = 16;
 const PRIMARY_COLOR = '#833F6D';
-const LATEST_ARTICLE_BG = '#C5B2BF'; // Վերին հատվածի ֆոնի գույնը
+const LATEST_ARTICLE_BG = '#C5B2BF';
 
-// ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ: Ավելի ճշգրիտ CARD_W հաշվարկ՝ համապատասխան HomeScreen-ին
-// cardsWrapper-ի ներքին padding-ը մեր դեպքում նույն CARD_GAP-ն է
 const CARDS_WRAPPER_INTERNAL_PADDING = CARD_GAP;
-
-// (Ընդհանուր լայնություն - 2 * cardsWrapper-ի արտաքին margin - 2 * cardsWrapper-ի ներքին padding - քարտերի միջև եղած gap) / 2
 const CARD_W = (SCREEN_WIDTH - (SIDE_PADDING * 2) - (CARDS_WRAPPER_INTERNAL_PADDING * 2) - CARD_GAP) / 2;
-
 const CARD_H = 151;
 
-// ────────────────────────────────────────────────
+// ----------------------------------------------------
 // Helpers
-// ────────────────────────────────────────────────
+// ----------------------------------------------------
 
 const removeHtmlTags = (htmlString: string): string => htmlString?.replace(/<[^>]*>/g, '') ?? '';
 
@@ -65,11 +57,14 @@ const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }: any)
   return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
 };
 
-// ────────────────────────────────────────────────
+// ----------------------------------------------------
 // Component
-// ────────────────────────────────────────────────
+// ----------------------------------------------------
 
 const InterviewScreen = () => {
+  // ✅ ՈՒՂՂՎԱԾ Է։ useData hook-ը կանչվում է կոմպոնենտի ներսում։
+  const { data: indexDataFromContext, loading: contextLoading } = useData();
+  
   const navigation = useNavigation<InterviewScreenNavigationProp>();
 
   const [latestArticles, setLatestArticles] = useState<Article[]>([]);
@@ -81,20 +76,27 @@ const InterviewScreen = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // ──────────────────────────────────────────────
+  // ----------------------------------------------------
   // Data fetching
-  // ──────────────────────────────────────────────
+  // ----------------------------------------------------
 
   const fetchInitialData = useCallback(async () => {
+    // Սպասում ենք, մինչև Context-ից տվյալները հասանելի լինեն
+    if (!indexDataFromContext) {
+      return; 
+    }
+
     setLoadingInitial(true);
     try {
-      const [indexData, latestInterviews, interviewPageData] = await Promise.all([
-        fetchIndexData(),
+      // Promise.all-ից հանված է fetchIndexData()
+      const [latestInterviews, interviewPageData] = await Promise.all([
         fetchLatestArticles('interview', 3),
         fetchArticlesByCategory('interview', 1, 13)
       ]);
 
-      setSlideArticles(indexData.slidePosts.slice(0, 6));
+      // slideArticles-ը սահմանվում է Context-ից եկած տվյալներով
+      setSlideArticles(indexDataFromContext.slidePosts.slice(0, 6));
+
       setLatestArticles(latestInterviews);
       setMiddleArticles(interviewPageData.articles.slice(0, 3));
       setAllArticles(interviewPageData.articles.slice(3));
@@ -107,42 +109,56 @@ const InterviewScreen = () => {
     } finally {
       setLoadingInitial(false);
     }
-  }, []);
+  }, [indexDataFromContext]);
 
-  const fetchMoreArticles = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
 
-    setLoadingMore(true);
-    try {
-      const nextPageData = await fetchArticlesByCategory('interview', page, 10);
-      setAllArticles(prev => [...prev, ...nextPageData.articles]);
-      setPage(prev => prev + 1);
-      setHasMore(
-        latestArticles.length + slideArticles.length + allArticles.length + nextPageData.articles.length < nextPageData.totalCount
-      );
-    } catch (err) {
-      console.error('Failed to fetch more interview articles:', err);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [hasMore, loadingMore, page, allArticles.length, latestArticles.length, slideArticles.length]);
+const fetchMoreArticles = useCallback(async () => {
+  if (loadingMore || !hasMore) return;
+
+  setLoadingMore(true);
+  try {
+    const nextPageData = await fetchArticlesByCategory('interview', page, 10);
+
+    // ✅ ՍՏՈՒԳՈՒՄ ԵՎ ԶՏՈՒՄ։ 
+    // Հեռացնում ենք այն նյութերը, որոնք արդեն կան allArticles ցուցակում։
+    const newArticles = nextPageData.articles.filter(
+      (newArticle) => !allArticles.find(existingArticle => existingArticle.id === newArticle.id)
+    );
+    
+    // Ավելացնում ենք միայն նոր, չկրկնվող նյութերը։
+    setAllArticles(prev => [...prev, ...newArticles]);
+    setPage(prev => prev + 1);
+
+    const currentTotal = allArticles.length + newArticles.length;
+    setHasMore(currentTotal < nextPageData.totalCount);
+
+  } catch (err) {
+    console.error('Failed to fetch more interview articles:', err);
+  } finally {
+    setLoadingMore(false);
+  }
+}, [hasMore, loadingMore, page, allArticles]); // ✅ allArticles-ը ավելացվել է կախվածության մեջ
 
   useEffect(() => {
+    // Եթե Context-ը դեռ բեռնվում է, ցույց չտալ էկրանի սեփական loading-ը
+    if (contextLoading) {
+        setLoadingInitial(true);
+        return;
+    }
     fetchInitialData();
-  }, [fetchInitialData]);
+  }, [fetchInitialData, contextLoading]);
 
-  // ──────────────────────────────────────────────
+  // ----------------------------------------------------
   // Render helpers
-  // ──────────────────────────────────────────────
+  // ----------------------------------------------------
 
   const renderPostCard = useCallback(({ item }: { item: Article }) => (
     <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ArticleScreen', { id: item.id })}>
       <Image source={{ uri: item.image_url }} style={styles.cardImg} />
-      {/* ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ: Կիրառում ենք BlurView LinearGradient-ի փոխարեն */}
       <BlurView
         intensity={70}
         tint="dark"
-        style={styles.cardBlurOverlay} // Կօգտագործենք HomeScreen-ի նման ոճ
+        style={styles.cardBlurOverlay}
       >
         <Text numberOfLines={2} style={styles.cardTitle}>{item.title}</Text>
       </BlurView>
@@ -167,9 +183,9 @@ const InterviewScreen = () => {
     </TouchableOpacity>
   ), [navigation]);
 
-  // ──────────────────────────────────────────────
-  // Early loading state
-  // ──────────────────────────────────────────────
+  // ----------------------------------------------------
+  // Loading State
+  // ----------------------------------------------------
 
   if (loadingInitial) {
     return (
@@ -179,13 +195,13 @@ const InterviewScreen = () => {
     );
   }
 
-  // ──────────────────────────────────────────────
+  // ----------------------------------------------------
   // JSX
-  // ──────────────────────────────────────────────
+  // ----------------------------------------------------
 
   return (
     <View style={styles.container}>
-      <Header />
+      {/* ❌ <Header />-ը հեռացված է */}
       <ScrollView
         contentContainerStyle={styles.body}
         showsVerticalScrollIndicator={false}
@@ -267,20 +283,19 @@ const InterviewScreen = () => {
           <Text style={styles.endOfFeedText}>Վերջ։ Ավելին չկա։</Text>
         )}
       </ScrollView>
-      <FooterNav />
+      {/* ❌ <FooterNav />-ը հեռացված է */}
     </View>
   );
 };
 
-// ────────────────────────────────────────────────
+// ----------------------------------------------------
 // Styles
-// ────────────────────────────────────────────────
+// ----------------------------------------------------
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   body: { paddingBottom: 24, backgroundColor: '#fff' },
-
   topSectionContainer: {
     backgroundColor: LATEST_ARTICLE_BG, 
     paddingTop: 10,
@@ -289,42 +304,36 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 24,
     marginTop:14,
   },
-
   pageTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
     textAlign: 'left',
     marginVertical: 20,
-    paddingHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
+    paddingHorizontal: SIDE_PADDING,
   },
-
   latestArticlesSection: {
     backgroundColor: LATEST_ARTICLE_BG,
-    paddingHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
+    paddingHorizontal: SIDE_PADDING,
     marginBottom: CARD_GAP,
   },
-
   latestBox: {
     backgroundColor: '#fff',
     borderRadius: 18,
     padding: CARD_GAP,
   },
-
   latestArticleCard: {
     flexDirection: 'row',
     backgroundColor: '#F9F9F9',
     borderRadius: 12,
     overflow: 'hidden',
   },
-
   latestArticleImage: {
     width: 100,
     height: 100,
     borderRadius: 12,
     marginRight: 10,
   },
-
   latestArticleTextContent: {
     flex: 1,
     minWidth: 0,
@@ -332,40 +341,35 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingLeft: 10,
   },
-
   latestArticleTitle: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#1c1c1c',
   },
-
   latestArticleExcerpt: {
     fontSize: 14,
     color: '#555',
     marginTop: 4,
     flexShrink: 1,
   },
-
   latestArticleDate: {
     fontSize: 10,
     color: '#666',
     alignSelf: 'flex-end',
     marginRight: 10,
   },
-
   cardsWrapper: {
-    marginHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
+    marginHorizontal: SIDE_PADDING,
     backgroundColor: '#fff',
     borderRadius: 18,
-    padding: CARD_GAP, // ✅ Օգտագործում ենք CARD_GAP
+    padding: CARD_GAP,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 5,
   },
-
   card: {
-    width: CARD_W, // ✅ Նոր հաշվարկված CARD_W
+    width: CARD_W,
     height: CARD_H,
     borderRadius: 12,
     overflow: 'hidden',
@@ -374,70 +378,55 @@ const styles = StyleSheet.create({
     width: '100%', 
     height: '100%',
   },
-  // ✅ ՓՈՓՈԽՈՒԹՅՈՒՆ: BlurView-ի ոճը HomeScreen-ի նման
   cardBlurOverlay: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: '40%', // Կարող եք կարգավորել ըստ ցանկության
+    height: '40%',
     justifyContent: 'flex-end',
     paddingHorizontal: 10,
     paddingBottom: 12,
     overflow: 'hidden',
   },
   cardTitle: { 
-    position: 'absolute', // Դիրքը մնում է նույնը, բայց այն BlurView-ի ներսում է
-    // bottom, left, right արժեքները կախված կլինեն cardBlurOverlay-ի padding-ից,
-    // եթե դուք դրանք ուզում եք ճշգրտել ըստ բլուրի ներքին տարածքի։
-    // Այս դեպքում, քանի որ cardBlurOverlay-ը ունի padding, կարելի է դրանք թողնել,
-    // քանի որ cardTitle-ը կգտնվի այդ padding-ի ներսում։
-    bottom: 12, 
-    left: 10, 
-    right: 10, 
     color: '#fff', 
     fontSize: 14, 
-    fontWeight: '600',
+    fontWeight: '600'
   },
-
   middleBanner: {
     height: 150,
     borderRadius: 14,
-    marginHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
+    marginHorizontal: SIDE_PADDING,
     marginVertical: CARD_GAP + 8,
   },
-
   endOfFeedText: {
     textAlign: 'center',
     paddingVertical: 20,
     color: '#666',
     fontSize: 14,
   },
-
   sectionContainer: {
     marginTop: CARD_GAP,
-    paddingHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
+    paddingHorizontal: SIDE_PADDING,
   },
-
   sectionContainerWithTitle: {
     marginTop: CARD_GAP,
   },
-
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: PRIMARY_COLOR,
     marginBottom: 12,
-    paddingHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
+    paddingHorizontal: SIDE_PADDING,
   },
-
   latestBoxWrapper: {
     backgroundColor: '#fff',
     borderRadius: 18,
     padding: CARD_GAP,
     borderWidth: 1,
     borderColor: '#f0f0f0',
-    marginHorizontal: SIDE_PADDING, // ✅ Օգտագործում ենք SIDE_PADDING
+    marginHorizontal: SIDE_PADDING,
   },
 });
 

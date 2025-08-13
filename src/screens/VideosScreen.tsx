@@ -235,7 +235,7 @@ const VideosScreen = ({ navigation }: any) => {
     return (
         // The main container is now a View to allow the Header to sit at the very top.
         <View style={styles.container}>
-            <Header />
+            {/* <Header /> */}
             {/* The content is wrapped in a SafeAreaView to protect it from notches and the home indicator. */}
             <SafeAreaView style={styles.safeContentContainer}>
                 <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -274,7 +274,7 @@ const VideosScreen = ({ navigation }: any) => {
                         />
                     </View>
                 </TouchableWithoutFeedback>
-                <FooterNav />
+                {/* <FooterNav /> */}
             </SafeAreaView>
         </View>
     );

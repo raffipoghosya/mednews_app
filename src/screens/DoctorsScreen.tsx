@@ -28,7 +28,7 @@ const bannerImages = [
   // ... (Ձեր bannerImages զանգվածը նույնն է)
   { id: '1', image: require('../../assets/banners/1.png'), url: 'https://www.facebook.com/mashkabanpodolog' },
   { id: '2', image: require('../../assets/banners/2.png'), url: 'https://www.facebook.com/dr.Aivazyan' },
-  { id: '3', image: require('../../assets/banners/3.png'), url: 'https://www.facebook.com/Dr.GagikTunyan' },
+  { id: '3', image: require('../../assets/banners/3.png'), url: 'https://www.facebook.com/ValentinaSVardanyan' },
   { id: '4', image: require('../../assets/banners/4.png'), url: 'https://www.facebook.com/doctorbadalyan' },
   { id: '5', image: require('../../assets/banners/5.png'), url: 'https://www.facebook.com/dr.varzhapetyan' },
   { id: '6', image: require('../../assets/banners/6.png'), url: 'https://www.facebook.com/mankakanurolog' },
@@ -53,7 +53,7 @@ const DoctorsScreen = () => {
   return (
     <View style={styles.container}>
       <View style={[styles.primaryBackground, { height: primaryBackgroundHeight, marginTop:10, }]}></View>
-      <Header/>
+      {/* <Header/> */}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.listContainer}>
@@ -74,7 +74,7 @@ const DoctorsScreen = () => {
         </View>
       </ScrollView>
 
-      <FooterNav />
+      {/* <FooterNav /> */}
     </View>
   );
 };
