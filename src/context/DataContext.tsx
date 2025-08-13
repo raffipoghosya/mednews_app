@@ -40,6 +40,7 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+
 // 3. Ստեղծում և արտահանում ենք (export) useData hook-ը
 // Սա է այն ֆունկցիան, որը ձեր էկրանները կօգտագործեն Context-ի տվյալները ստանալու համար
 export const useData = () => {

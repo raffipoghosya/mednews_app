@@ -91,6 +91,7 @@ function MainTabNavigator() {
 // This navigator handles transitions between the Splash screen, the main app, and any full-screen modal pages.
 const Root = createStackNavigator();
 
+
 function AppNavigator() {
   return (
     <Root.Navigator screenOptions={{ headerShown: false }}>

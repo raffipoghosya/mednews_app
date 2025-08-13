@@ -12,6 +12,7 @@ const FooterNav = (props: any) => {
   const { state, navigation } = props;
   const currentRouteName = state.routeNames[state.index];
 
+  
   return (
     <View style={styles.footerContainer}>
       <View style={styles.footer}>

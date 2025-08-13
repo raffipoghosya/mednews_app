@@ -86,6 +86,7 @@ const SplashScreen = () => {
     return () => clearTimeout(timeout);
   }, []);
 
+  
   return (
     <View style={styles.container}>
       {/* LOGO */}

@@ -17,6 +17,7 @@ import FooterNav from '../components/FooterNav';
 import { fetchIndexData } from '../api';
 import { useData } from '../context/DataContext';
 
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_GAP = 14;
 const SIDE_PADDING = 16;

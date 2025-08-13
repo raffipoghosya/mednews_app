@@ -127,6 +127,7 @@ const fetchMoreArticles = useCallback(async () => {
     const currentTotal = allArticles.length + newArticles.length;
     setHasMore(currentTotal < nextPageData.totalCount);
 
+    
   } catch (err) {
     console.error('Failed to fetch more news articles:', err);
   } finally {

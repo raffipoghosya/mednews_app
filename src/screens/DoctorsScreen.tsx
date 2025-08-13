@@ -40,6 +40,7 @@ const bannerImages = [
   { id: '12', image: require('../../assets/banners/12.png'), url: 'https://www.facebook.com/dr.tigrankamalyan' },
 ];
 
+
 const DoctorsScreen = () => {
   const openLink = async (url: string) => {
     const supported = await Linking.canOpenURL(url);

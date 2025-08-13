@@ -139,6 +139,7 @@ const fetchMoreArticles = useCallback(async () => {
   }
 }, [hasMore, loadingMore, page, allArticles]); // ✅ allArticles-ը ավելացվել է կախվածության մեջ
 
+
   useEffect(() => {
     // Եթե Context-ը դեռ բեռնվում է, ցույց չտալ էկրանի սեփական loading-ը
     if (contextLoading) {

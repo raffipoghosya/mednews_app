@@ -21,6 +21,7 @@ import HTMLView from 'react-native-htmlview';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const PRIMARY_COLOR = '#833F6D'; // Հիմնական մանուշակագույն գույնը
 
+
 // Սահմանում ենք նկարի և վերնագրի բլոկների հարաբերական չափերը
 const IMAGE_CONTAINER_WIDTH_PERCENT = 0.9; // Նկարի լայնությունը էկրանի 90%-ը
 const IMAGE_CONTAINER_HEIGHT_RATIO = 0.5; // Նկարի բարձրությունը իր լայնության 50%-ը

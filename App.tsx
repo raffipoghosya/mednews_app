@@ -10,6 +10,7 @@ import AppNavigator from './src/navigation/AppNavigator';
 // Import the DataProvider we created for performance optimization
 import { DataProvider } from './src/context/DataContext';
 
+
 export default function App() {
   return (
     <SafeAreaProvider>
