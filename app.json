@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mednews-app",
-    "slug": "mednews-app",
+    "name": "bujnews-app",
+    "slug": "bujnews-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,8 +25,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.raffi.mednewsapp",
-      "versionCode": 1,
+      "package": "com.raffi.bujnewsapp",
+      "versionCode": 3,
       "edgeToEdgeEnabled": true,
       "hardwareAccelerated": true
     },
